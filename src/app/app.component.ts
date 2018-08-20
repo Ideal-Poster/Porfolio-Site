@@ -3,7 +3,7 @@ import {
 } from '@angular/core';
 import * as Matter from 'matter-js';
 import * as MatterAttractors from 'matter-attractors';
-
+import * as PIXI from 'pixi.js/dist/pixi.js';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -72,10 +72,15 @@ export class AppComponent {
 
     World.add(world, attractiveBody);
 
+    console.log(PIXI);
 
     // add some bodies that to be attracted
     for (var i = 0; i < 200; i += 1) {
-      var body = Bodies.circle(0, 0, Common.random(4, 10));
+      var body = Bodies.circle(
+        render.options.width / 2,
+        render.options.height / 2,
+        Common.random(4, 10)
+      );
 
       World.add(world, body);
     }
