@@ -1,109 +1,101 @@
 import {
   Component
 } from '@angular/core';
-import * as Matter from 'matter-js';
 import * as MatterAttractors from 'matter-attractors';
 import * as PIXI from 'pixi.js/dist/pixi.js';
+import * as Matter from 'matter-js';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  title = 'app';
+
   constructor() {
-    // Matter.js module aliases
-    var Engine = Matter.Engine,
-      Events = Matter.Events,
-      Runner = Matter.Runner,
-      Render = Matter.Render,
-      World = Matter.World,
-      Body = Matter.Body,
-      Mouse = Matter.Mouse,
-      Common = Matter.Common,
-      Bodies = Matter.Bodies;
-    Matter.use(MatterAttractors);
+    setTimeout(() => {
+      // https://codepen.io/BakerCo/pen/ojKJJb?editors=0010
 
-    // create engine
-    var engine = Engine.create();
+      // Matter.js module aliases
+      var Engine = Matter.Engine,
+        World = Matter.World,
+        Bodies = Matter.Bodies;
 
-    // create renderer
-    var render = Render.create({
-      element: document.body,
-      engine: engine,
-      options: {
-        width: Math.min(document.documentElement.clientWidth, 1024),
-        height: Math.min(document.documentElement.clientHeight, 1024),
-        wireframes: false
-      }
-    });
+      // Create a Matter.js engine
+      var engine = Engine.create();
 
-    // create runner
-    var runner = Runner.create();
-
-    Runner.run(runner, engine);
-    Render.run(render);
-
-    // create demo scene
-    var world = engine.world;
-    world.gravity.scale = 0;
-
-    // create a body with an attractor
-    var attractiveBody = Bodies.circle(
-      render.options.width / 2,
-      render.options.height / 2,
-      0,
-      {
-        isStatic: true,
-
-        // example of an attractor function that
-        // returns a force vector that applies to bodyB
-        plugin: {
-          attractors: [
-            function (bodyA, bodyB) {
-              return {
-                x: (bodyA.position.x - bodyB.position.x) * 1e-6,
-                y: (bodyA.position.y - bodyB.position.y) * 1e-6,
-              };
-            }
-          ]
-        }
+      var renderer = new PIXI.WebGLRenderer(1000, 500, {
+        antialias: true,
+        resolution: 2
       });
+      // renderer.roundPixels = false;
 
-    World.add(world, attractiveBody);
+      renderer.backgroundColor = 0x000000;
+      var stage = new PIXI.Container();
+      document.body.appendChild(renderer.view);
 
-    console.log(PIXI);
+      var bodies = [];
+      var objects = [];
 
-    // add some bodies that to be attracted
-    for (var i = 0; i < 200; i += 1) {
-      var body = Bodies.circle(
-        render.options.width / 2,
-        render.options.height / 2,
-        Common.random(4, 10)
-      );
+      function SpriteObject(shape, x, y, w, h, color) {
+        var graphics = new PIXI.Graphics();
+        graphics.beginFill(color);
+        graphics.lineStyle(1, 0xFFFFFF);
+        if (shape === 'rect') {
+          graphics.drawRect(0, 0, w, h);
+        } else if (shape === 'circle') {
+          graphics.drawCircle(0, 0, w);
+        }
+        var texture = graphics.generateCanvasTexture();
+        var sprite = new PIXI.Sprite(texture);
+        sprite.anchor.x = 0.5;
+        sprite.anchor.y = 0.5;
+        sprite.position.x = x;
+        sprite.position.y = y;
+        stage.addChild(sprite);
+        return sprite;
+      }
 
-      World.add(world, body);
-    }
+      function BodyObject(shape, x, y, w, h) {
+        if (shape === 'rect') {
+          var body = Bodies.rectangle(x, y, w, h);
+        } else if (shape === 'circle') {
+          var body = Bodies.circle(x, y, w);
+        }
+        bodies.push(body);
+        return body;
+      }
 
-    // // add mouse control
-    // var mouse = Mouse.create(render.canvas);
+      var createObject = function (shape, x, y, w, h, color) {
+        return ({
+          sprite: SpriteObject(shape, x * 2, y * 2, w * 2, h * 2, color),
+          body: BodyObject(shape, x, y, w, h)
+        });
+      }
 
-    // Events.on(engine, 'afterUpdate', function () {
-    //   if (!mouse.position.x) {
-    //     return;
-    //   }
+      for (var i = 0; i < 3; i++) {
+        objects.push(createObject('circle', 200, 40 + i * 50, 10, 40, 0x55CC33));
+      }
 
-    //   // smoothly move the attractor body towards the mouse
-    //   Body.translate(attractiveBody, {
-    //     x: (mouse.position.x - attractiveBody.position.x) * 0.25,
-    //     y: (mouse.position.y - attractiveBody.position.y) * 0.25
-    //   });
-    // });
+      var ground = createObject('rect', 250, 250, 500, 20, 0x111111);
+      ground.body.isStatic = true;
+      objects.push(ground);
 
+      animate();
 
-    // console.log(Body);
+      function animate() {
+        requestAnimationFrame(animate);
 
-    // run the engine
-    Engine.run(engine);
+        objects.forEach(function (object) {
+          object.sprite.position.x = object.body.position.x * 2;
+          object.sprite.position.y = object.body.position.y * 2;
+          object.sprite.rotation = object.body.angle;
+        });
+        renderer.render(stage);
+      }
+
+      World.add(engine.world, bodies);
+      Engine.run(engine);
+
+    }, 1000);
   }
 }
